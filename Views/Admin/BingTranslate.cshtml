@@ -1,0 +1,55 @@
+﻿@{
+    Script.Require("rx").AtHead();
+    Script.Require("jQuery").AtHead();
+    Script.Require("rx.jQuery").AtHead();
+}
+
+
+<script type="text/javascript">
+    var destLanguages = ["de", "es", "zh-CHT", "fr", "it", "ar", "ht", "he", "ja", "ko", "no", "ru", "th"];
+
+    // The AppId identifies your application at the Bing online service.
+    // Before running the application, you have to get your free AppId
+    // here: http://www.bing.com/developers/createapp.aspx
+    var appId = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+
+    (function ($) {
+
+        var languagesObs = Rx.Observable.FromArray(destLanguages);
+        var trans = Microsoft.Translator(appId);
+
+        //            var translated = Microsoft.translate("testing", "en-us", "de");
+        //            translated.Subscribe(function( value ) {
+        //                $("#output").append(value);}
+        //            );
+
+        var textInputDetected = $("#TextToTranslate")
+                .toObservable('keyup')
+                .Throttle(500)
+                .Do(function (_) { $("#output").empty(); })
+                .Select(function () {
+                    return $("#TextToTranslate").val();
+                })
+                .DistinctUntilChanged()
+                .SelectMany(function (text) {
+                    return languagesObs.Select(function (t1) {
+                        return { source: text, dest: t1 };
+                    });
+                })
+                .SelectMany(function (sourceDest) {
+                    return Microsoft.translate(sourceDest.source, 'en-us', sourceDest.dest)
+                        .Select(function (translated) {
+                            return { dest: sourceDest.dest, translation: translated };
+                        });
+                });
+
+        d = textInputDetected.Subscribe(function (x) {
+            $("#output").append(x.dest + ' : ' + x.translation + '<br />');
+        },
+                function (err) {
+                    $("#output").append(err + '<br />')
+                });
+        ;
+    })(jQuery);
+                
+</script>

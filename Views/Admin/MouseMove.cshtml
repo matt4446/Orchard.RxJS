@@ -1,0 +1,45 @@
+﻿@{
+    
+    Script.Require("rx").AtHead();
+    Script.Require("jQuery").AtHead();
+    Script.Require("rx.jQuery").AtHead();
+}
+
+<img src="@Url.Content("~/modules/orchard.rxjs/content/PussInBoots.gif")" alt="Puss" />
+
+@using(Script.Foot())
+{
+<script type="text/javascript">
+    $(document).ready(function () {
+        var dragTarget = $("img");
+        var mouseUp = dragTarget.onAsObservable("mouseup");
+        var mouseMove = dragTarget.onAsObservable("mousemove");
+        var mouseDown = dragTarget.onAsObservable("mousedown")
+                .select(function (event) {
+                    return {
+                        left: event.clientX - dragTarget.offset().left,
+                        top: event.clientY - dragTarget.offset().top
+                    };
+                });
+
+        var moves = mouseDown.selectMany(function (imageOffset) {
+            return mouseMove
+            //.do(function (event) { event.preventDefault(); })
+                        .select(function (pos) {
+                            return {
+                                target: dragTarget,
+                                left: pos.clientX - imageOffset.left,
+                                top: pos.clientY - imageOffset.top
+                            };
+                        })
+                        .takeUntil(mouseUp);
+        });
+
+        moves.subscribe(function (pos) {
+            pos.target.css("position", "absolute");
+            pos.target.css("left", pos.left);
+            pos.target.css("top", pos.top);
+        });
+    });
+</script>
+}    

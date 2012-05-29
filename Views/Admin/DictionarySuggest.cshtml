@@ -1,0 +1,53 @@
+﻿@{
+    Script.Require("jQuery").AtHead();
+
+    Script.Require("rx").AtHead();
+    Script.Require("rx.time").AtHead();
+    Script.Require("rx.jQuery").AtHead();
+}
+<h2>
+    Wikipedia Search</h2>
+<input type="text" id="textInput" />
+<ul id="results">
+</ul>
+@using (Script.Foot())
+{
+    <script type="text/javascript">
+        function searchWikipedia(term) {
+            return $.ajaxAsObservable({
+                url: 'http://en.wikipedia.org/w/api.php',
+                data: { action: 'opensearch',
+                    search: term,
+                    format: 'json'
+                },
+                dataType: 'jsonp'
+            }).select(function (results) { return results.data; });
+        }
+
+        $(document).ready(function () {
+            var input = $('#textInput'),
+
+            keyup = input.keyupAsObservable()
+                .select(function (ev) { return input.val(); })
+                .where(function (text) { return text.length > 2; })
+                .throttle(1500)
+                .distinctUntilChanged(),
+
+            searcher = keyup
+                .select(function (text) { return searchWikipedia(text); })
+                .switchLatest()
+                .where(function (data) { return data.length === 2; });
+
+            searcher.subscribe(function (data) {
+                var ul = $('#results');
+                var results = data[1];
+
+                ul.empty();
+                $.each(results, function (index, value) {
+                    $('<li>' + value + '</li>').appendTo(ul);
+                });
+            });
+
+        });       
+    </script>
+}
